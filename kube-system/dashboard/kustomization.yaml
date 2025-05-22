@@ -1,0 +1,13 @@
+# https://github.com/thaum-xyz/ankhmorpork.git
+#https://github.com/MikaelElkiaer/flux-twr.git
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kube-system
+resources:
+  - service-account.yaml
+  - rbac-read-only.yaml
+  - secret.yaml
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress-treafik.yaml

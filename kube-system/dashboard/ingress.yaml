@@ -1,0 +1,16 @@
+apiVersion: extensions/v1
+kind: Ingress
+metadata:
+  name: kubernetes-dashboard
+  namespace: kube-system
+  annotations:
+    kubernetes.io/ingress.class: "${component.ingress.kubernetes.ingressClass}"
+spec:
+  rules:
+  - host: ${component.kubernetes-dashboard.ingress.urlPrefix}.${component.ingress.ssoFqdn}
+    http:
+      paths:
+      - path: ${component.kubernetes-dashboard.ingress.path}
+        backend:
+          serviceName: kubernetes-dashboard
+          servicePort: 443

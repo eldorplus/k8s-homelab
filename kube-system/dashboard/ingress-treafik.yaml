@@ -1,0 +1,29 @@
+# ---------------- Ingress Rule (traefik)------------------ #
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubernetes-dashboard-ingress
+  #namespace: default
+  namespace: kube-system
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    #traefik.frontend.rule.type: PathPrefixStrip
+    #traefik.frontend.redirect.entryPoint: https
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  tls:
+  - hosts:
+      - dashboard.k8s.localhost
+    secretName: dashboard.k8s.localhost
+  rules:
+  - host: dashboard.k8s.localhost
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kubernetes-dashboard
+            port:
+              number: 443
