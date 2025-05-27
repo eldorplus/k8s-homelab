@@ -36,3 +36,5 @@ secrets/age-key.txt
 
 # Exclude 1password-credentials.json anywhere on the repository
 1password-credentials.json
+
+.idea
