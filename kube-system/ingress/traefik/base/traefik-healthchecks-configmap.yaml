@@ -1,0 +1,117 @@
+#
+#  Author: Patrick LUZOLO
+#  Date: 2025-05-22 13:47:33 +0000 (Tue, 22 May 2025)
+#
+#  vim:ts=2:sts=2:sw=2:et
+#  lint: k8s
+#
+#  https://github.com/eldorplus/k8s-homelab
+#  License: see accompanying Patrick LUZOLO LICENSE file
+#
+#  If you're using my code you're welcome to connect with me on LinkedIn
+#  and optionally send me feedback to help improve or steer this or other code I publish
+#
+#  https://www.linkedin.com/in/patrickluzolo/
+#
+
+# ============================================================================ #
+#           T r a e f i k   H e a l t h c h e c k   C o n f i g M a p
+# ============================================================================ #
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: traefik-configs
+  namespace: traefik
+data:
+  dynamic.yaml: |
+    http:
+      services:
+        whoami-public:
+          weighted:
+            healthcheck: {}
+            services:
+            - name: whoami-dc1
+              weight: 3
+            - name: whoami-dc2
+              weight: 1
+
+        whoami-dc1:
+          loadBalancer:
+            servers:
+              - url: "http://whoamiv1.app.svc.cluster.local:80"
+            healthCheck:
+              scheme: http
+              interval: 2s
+              timeout: 1s
+              path: /ping
+
+        whoami-dc2:
+          loadBalancer:
+            servers:
+              - url: "http://whoamiv2.app.svc.cluster.local:80"
+            healthCheck:
+              scheme: http
+              interval: 2s
+              timeout: 1s
+              path: /ping
+
+      routers:
+        whoami-router:
+          entryPoints:
+            - websecure
+          rule: Host(`<MY_DOMAIN>`)
+          service: whoami-public
+          tls:
+            certResolver: letsencrypt
+  traefik.yaml: |-
+    ping: ""
+    serversTransport:
+      insecureSkipVerify: true
+    api:
+      insecure: true
+      dashboard: true
+      debug: false
+    metrics:
+      prometheus: ""
+    entryPoints:
+      web:
+        address: ":80"
+      websecure:
+        address: ":443"
+    providers:
+      kubernetesCRD: ""
+      kubernetesIngress: ""
+      kubernetesGateway: ""
+    experimental:
+      kubernetesGateway: true
+    log:
+      filePath: ""
+      level: error
+      format: json
+    accessLog:
+      filePath: ""
+      format: json
+      bufferingSize: 0
+      filters:
+        #statusCodes: ["200"]   
+        retryAttempts: true
+        minDuration: 20
+      fields:
+        defaultMode: keep
+        names:
+          ClientUsername: drop
+        headers:
+          defaultMode: keep
+          names:
+            User-Agent: redact
+            Authorization: drop
+            Content-Type: keep
+    #tracing:             
+    #  serviceName:               
+    #  zipkin:             
+    #    sameSpan: true        
+    #    id128Bit: true     
+    #    sampleRate: 0.1       
+    #    httpEndpoint: http://localhost:9411/api/v2/spans
