@@ -1,8 +1,9 @@
-#!/usr/bin/env bash
-#  vim:ts=4:sts=4:sw=4:et
 #
 #  Author: Patrick LUZOLO
 #  Date: 2025-05-22 13:47:33 +0000 (Tue, 22 May 2025)
+#
+#  vim:ts=2:sts=2:sw=2:et
+#  lint: k8s
 #
 #  https://github.com/eldorplus/k8s-homelab
 #  License: see accompanying Patrick LUZOLO LICENSE file
@@ -12,12 +13,13 @@
 #  https://www.linkedin.com/in/patrick-luzolo-eldorplus
 #
 # ============================================================================ #
-#                       K u b e r n e t e s   D i r e n v
+#              C e r t   M a n a g e r   K u s t o m i z a t i o n
 # ============================================================================ #
 
-set -euo pipefail
-[ -n "${DEBUG:-}" ] && set -x
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+#namespace: cert-manager  # XXX: Do not set this - it will override roles for kube-system needed for leader election of cainjector
 
-NAMESPACE="kubernetes-dashboard"
-
-. ../../.envrc
+resources:
+  - ../base
