@@ -1,0 +1,83 @@
+#
+#  Author: Patrick LUZOLO
+#  Date: 2021-11-29 16:09:45 +0000 (Mon, 29 Nov 2021)
+#
+#  vim:ts=2:sts=2:sw=2:et
+#  lint: k8s
+#
+#  https://github.com/eldorplus/k8s-homelab
+#  License: see accompanying Patrick LUZOLO LICENSE file
+#
+#  If you're using my code you're welcome to connect with me on LinkedIn and optionally send me feedback to help steer this or other code I publish
+#
+#  https://www.linkedin.com/in/patrick-luzolo-eldorplus
+#
+# ============================================================================ #
+#            H a s h i c o r p    V a u l t     K u s t o m i z a t i o n
+# ============================================================================ #
+# https://github.com/ClubCedille/k8s-management/blob/main/system/vault/helm/vault.values.yaml
+
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+#namespace: vault  # Do not override helm chart, can cause issues
+
+resources:
+  - namespace.yaml
+  #- vault-init-crs.yaml
+  - resources/certificate.yaml
+#  - resources/httpproxy.yaml
+
+helmCharts:
+  - name: vault
+    repo: https://helm.releases.hashicorp.com
+    version:  0.30.0
+    releaseName: vault
+    namespace: vault
+    includeCRDs: true
+    valuesFile: values.yaml
+
+  - name: vault-config-operator
+    releaseName: vault-config-operator
+    version: 0.8.33
+    repo: https://redhat-cop.github.io/vault-config-operator
+    valuesFile: vault-config-operator-values.yaml
+    namespace: vault
+    includeCRDs: true
+
+
+#patches:
+#  - target:
+#      kind: Deployment
+#      name: vault-config-operator
+#    patch: |
+#      - op: add
+#        path: /metadata/namespace
+#        value: vault
+#  - target:
+#      group: cert-manager.io
+#      version: v1
+#      kind: Issuer
+#      name: selfsigned-issuer
+#    patch: |
+#      - op: add
+#        path: /metadata/namespace
+#        value: vault
+#  - target:
+#      group: cert-manager.io
+#      version: v1
+#      kind: Certificate
+#      name: vault-config-operator-webhook-service-cert
+#    patch: |
+#      - op: add
+#        path: /metadata/namespace
+#        value: vault
+#  - target:
+#      group: cert-manager.io
+#      version: v1
+#      kind: Certificate
+#      name: vault-config-operator-metrics-service-cert
+#    patch: |
+#      - op: add
+#        path: /metadata/namespace
+#        value: vault

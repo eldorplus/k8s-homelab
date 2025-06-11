@@ -44,6 +44,14 @@ resources:
   # XXX: for quickly testing Traefik
   #- whoami.yaml
 
+configurations:
+  - kustomizeconfig.yaml
+
+configMapGenerator:
+  - name: traefik-configs
+    files:
+      - traefik-healthchecks-configmap.yaml
+
 helmCharts:
   - name: traefik
     repo: https://helm.traefik.io/traefik

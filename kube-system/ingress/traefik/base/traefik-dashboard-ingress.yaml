@@ -24,9 +24,10 @@ metadata:
   name: traefik-dashboard
   namespace: traefik
   annotations:
+    app.kubernetes.io/name: traefik-traefik
+    app.kubernetes.io/instance: traefik-dashboard-ingress
     cert-manager.io/cluster-issuer: letsencrypt
     ingress.kubernetes.io/force-ssl-redirect: "true"
-
     # deprecated, use ingressClassName under spec section for Kubernetes 1.18+
     #kubernetes.io/ingress.class: traefik
     traefik.ingress.kubernetes.io/router.tls: "true"
@@ -42,10 +43,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - traefik.DOMAIN.COM  # XXX: Edit
+        - traefik.localhost  # XXX: Edit
       secretName: traefik-dashboard-tls
   rules:
-    - host: traefik.DOMAIN.COM  # XXX: Edit
+    - host: traefik.localhost  # XXX: Edit
       http:
         paths:
           - path: /

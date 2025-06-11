@@ -27,7 +27,7 @@ spec:
   acme:
     # XXX: set your admin email address - Let's Encrypt will use this to contact you about expiring certificates, and issues related to your account
     # auto-creates an account with this email address
-    email: hari@domain.com
+    email: hello@example.com # XXX: Edit
     # XXX: test on LetsEncrypt staging first
     server: https://acme-staging-v02.api.letsencrypt.org/directory
     #server: https://acme-v02.api.letsencrypt.org/directory
@@ -51,7 +51,7 @@ spec:
       # XXX: HTTP cannot be used for wildcard SSL certs validation - must configure DNS resolver instead for that
       - http01:
           ingress:
-            class: nginx
+            class: traefik #nginx
 
       # XXX: DNS - if ingress is not publicly accessible (eg. only via VPN) then must use DNS validation
       #            LetsEncrypt doesn't provide public IPs to whitelist and can change any time
@@ -101,4 +101,4 @@ spec:
         #
         selector:
           dnsNames:
-            - example.org  # XXX: Edit
+            - traefik.localhost  # XXX: Edit

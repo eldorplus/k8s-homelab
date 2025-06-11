@@ -28,8 +28,9 @@ metadata:
   namespace: traefik
 spec:
   secretName: traefik-dashboard-tls
+  commonName: localhost
   dnsNames:
-    - traefik.DOMAIN.COM  # XXX: Edit
+    - traefik.localhost  # XXX: Edit
   issuerRef:
     group: cert-manager.io
     kind: ClusterIssuer

@@ -15,7 +15,7 @@
 #
 
 ---
-apiVersion: traefik.containo.us/v1alpha1
+apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: traefik-dashboard-tls  # must differentiate it from the default traefik-dashboard ingress created by Helm which is needed to route to api@internal
@@ -24,24 +24,24 @@ spec:
     - websecure
   routes:
     # Gets '404 page not found'
-    #- match: Host(`traefik.DOMAIN.COM`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
+    #- match: Host(`traefik.localhost`) && (PathPrefix(`/dashboard`) || PathPrefix(`/api`))
     #  kind: Rule
     #  services:
     #    - name: api@internal
     #      kind: TraefikService
     - kind: Rule
-      match: Host("traefik.DOMAIN.COM")  # XXX: Edit
+      match: Host("traefik.localhost")  # XXX: Edit
       services:
         - name: traefik-dashboard
-          port: 9000
+          port: 9100
       middlewares:
         - name: dashboard-basic-auth  # doesn't require namespace prefix unlike regular ingress annotations
         - name: dashboard-add-prefix
     - kind: Rule
-      match: Host("traefik.DOMAIN.COM") && PathPrefix("/api")  # XXX: Edit domain
+      match: Host("traefik.localhost") && PathPrefix("/api")  # XXX: Edit domain
       services:
         - name: traefik-dashboard
-          port: 9000
+          port: 9100
       middlewares:
         - name: dashboard-basic-auth
   tls:

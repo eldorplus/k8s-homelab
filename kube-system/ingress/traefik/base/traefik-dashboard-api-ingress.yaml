@@ -41,10 +41,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - traefik.DOMAIN.COM  # XXX: Edit
+        - traefik.localhost  # XXX: Edit
       secretName: traefik-dashboard-tls
   rules:
-    - host: traefik.DOMAIN.COM  # XXX: Edit
+    - host: traefik.localhost  # XXX: Edit
       http:
         paths:
           - path: /api

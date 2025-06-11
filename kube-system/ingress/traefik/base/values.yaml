@@ -23,11 +23,10 @@
 
 ---
 image: # @schema additionalProperties: false
-  name: traefik
   # -- Traefik image host registry
-#  registry: docker.io
+  registry: docker.io
   # -- Traefik image repository
-#  repository: traefik
+  repository: traefik
   # -- defaults to appVersion. It's used for version checking, even prefixed with experimental- or latest-.
   # When a digest is required, `versionOverride` can be used to set the version.
   # defaults to appVersion
@@ -168,8 +167,8 @@ experimental:
     # You may create that Gateway in another namespace, setting its name below:
     # namespace: default
   # -- Enable traefik experimental plugins
-  plugins:
-    enabled: false
+  plugins: {}  # @schema additionalProperties: false
+  #  enabled: false
   # demo:
   #   moduleName: github.com/traefik/plugindemo
   #   version: v0.2.1
@@ -399,22 +398,22 @@ providers:  # @schema additionalProperties: false
 # - "--providers.file.filename=/config/dynamic.toml"
 # - "--ping"
 # - "--ping.entrypoint=web"
-volumes:
- - name: public-cert #traefik-config
-   mountPath: "/certs"
-   type: secret
+volumes: []
+# - name: public-cert
+#   mountPath: "/certs"
+#   type: secret
 # XXX: for nested healthchecks traefik-healthchecks-configmap.yaml
- - name: '{{ printf "%s-configs" .Release.Name }}'
-   mountPath: "/config"
-   type: configMap
+# - name: '{{ printf "%s-configs" .Release.Name }}'
+#   mountPath: "/config"
+#   type: configMap
 
 # Additional volumeMounts to add to the Traefik container
-additionalVolumeMounts:
+additionalVolumeMounts: []
   # For instance when using a logshipper for access logs
   # - name: traefik-logs
   #   mountPath: /var/log/traefik
-  - name: traefik-config #config
-    mountPath: /config
+  #- name: '{{ printf "%s-configs" .Release.Name }}' #config
+  #  mountPath: /config
 
 # Logs
 # https://docs.traefik.io/observability/logs/
@@ -691,7 +690,8 @@ globalArguments:
 #
 ## Use curly braces to pass values: `helm install --set="additionalArguments={--providers.kubernetesingress.ingressclass=traefik-internal,--log.level=DEBUG}"`
 #
-additionalArguments: []
+additionalArguments:
+  - '--providers.file.directory=/config'
 #  - "--providers.kubernetescrd"
 #  - "--providers.kubernetesingress.ingressclass=traefik-internal"
 #  - "--log.level=DEBUG"
@@ -973,15 +973,15 @@ persistence:
   # It can be used to store TLS certificates along with `certificatesResolvers.<name>.acme.storage`  option
   enabled: true
   name: data
-  existingClaim: ""
+  #existingClaim: ""
   accessMode: ReadWriteOnce
   size: 128Mi
-  storageClass: ""
-  volumeName: ""
+  #storageClass: ""
+  #volumeName: ""
   path: /data
   annotations: {}
   # -- Only mount a subpath of the Volume into the pod
-  subPath: ""
+  #subPath: ""
 
 # -- Certificates resolvers configuration.
 # Ref: https://doc.traefik.io/traefik/https/acme/#certificate-resolvers
@@ -1043,32 +1043,35 @@ serviceAccount: # @schema additionalProperties: false
 serviceAccountAnnotations: {}
 
 # -- [Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for `traefik` container.
-resources: {}
-  # requests:
-  #   cpu: "100m"
-  #   memory: "50Mi"
-  # limits:
-  #   cpu: "300m"
-  #   memory: "150Mi"
+resources:
+  requests:
+    cpu: 250m #1000m
+    memory: 64Mi #1024Mi
+  limits:
+    cpu: 500m #2000m
+    memory: 128Mi #1024Mi
 
+# -- [Affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/) is a set of rules that the scheduler uses to determine where to place a pod.
 # -- This example pod anti-affinity forces the scheduler to put traefik pods
 # -- on nodes where no other traefik pods are scheduled.
 # It should be used when hostNetwork: true to prevent port conflicts
-affinity: {}
+affinity:
 # # This example pod anti-affinity forces the scheduler to put traefik pods
 # # on nodes where no other traefik pods are scheduled.
 # # It should be used when hostNetwork: true to prevent port conflicts
-#   podAntiAffinity:
-#     requiredDuringSchedulingIgnoredDuringExecution:
-#       - labelSelector:
-#           matchLabels:
-#             app.kubernetes.io/name: '{{ template "traefik.name" . }}'
-#             app.kubernetes.io/instance: '{{ .Release.Name }}-{{ include "traefik.namespace" . }}'
-#         topologyKey: kubernetes.io/hostname
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: '{{ template "traefik.name" . }}'
+            app.kubernetes.io/instance: '{{ .Release.Name }}-{{ include "traefik.namespace" . }}'
+        topologyKey: kubernetes.io/hostname
 
 # -- nodeSelector is the simplest recommended form of node selection constraint.
 nodeSelector:
-  IngressProxy: true
+  kubernetes.io/os: linux
+  #location: k8s-homelab
+  #IngressProxy: true
 # -- Tolerations allow the scheduler to schedule pods with matching taints.
 tolerations:
   - operator: "Exists"

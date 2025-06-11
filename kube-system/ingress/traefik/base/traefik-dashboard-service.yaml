@@ -51,11 +51,21 @@ metadata:
     app.kubernetes.io/name: traefik-dashboard
 spec:
   type: ClusterIP
-  selector:
+  selector: # Select the pod container with app=treafik to communicate with CusrerIP inside the container
     app.kubernetes.io/instance: traefik-traefik
     app.kubernetes.io/name: traefik
   ports:
     - protocol: TCP
-      port: 9000
-      targetPort: 9000
+      name: metrics
+      port: 9100
+      targetPort: 9100
       #targetPort: traefik  # Traefik doesn't determine the port this way
+    - protocol: TCP
+      name: web
+      port: 80
+    - protocol: TCP
+      name: websecure
+      port: 443
+    - protocol: TCP
+      name: traefik
+      port: 8080
