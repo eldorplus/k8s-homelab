@@ -1,0 +1,122 @@
+#
+#  Author: Patrick LUZOLO
+#  Date: 2025-05-22 13:47:33 +0000 (Tue, 22 May 2025)
+#
+#  vim:ts=2:sts=2:sw=2:et
+#  lint: k8s
+#
+#  https://github.com/eldorplus/k8s-homelab
+#  License: see accompanying Patrick LUZOLO LICENSE file
+#
+#  If you're using my code you're welcome to connect with me on LinkedIn and optionally send me feedback to help steer this or other code I publish
+#
+#  https://www.linkedin.com/in/patrick-luzolo-eldorplus
+#
+# ============================================================================ #
+#            H a s h i c o r p    V a u l t     K u s t o m i z a t i o n
+# ============================================================================ #
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: vault
+  name: vault-secret-all
+rules:
+  - apiGroups: [""] # "" indicates the core API group
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vault-secret-binding
+  namespace: vault
+subjects:
+  - kind: ServiceAccount
+    name: vault
+    namespace: vault
+roleRef:
+  kind: Role
+  name: vault-secret-all
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: post-config
+  namespace: vault
+data:
+  bootstrap.sh: |
+    #!/bin/bash
+    export VAULT_ADDR=http://127.0.0.1:8200
+    while true;do
+      echo "doing curl"
+      curl --insecure --connect-timeout 15 -s $VAULT_ADDR/v1/sys/health?sealedcode\=204&uninitcode=\204 > /dev/null && break
+    done
+    if [ $(vault status -format=json | jq .initialized) == "false" ]
+    then
+      echo "doing vault init"
+      vault operator init -key-shares=1 -key-threshold=1 -format=json > /tmp/output.json
+      export VAULT_ROOT_TOKEN=$(cat /tmp/output.json | jq .root_token | tr -d '"')
+      export UNSEAL_KEY=$(cat /tmp/output.json | jq .unseal_keys_b64[0] | tr -d '"')
+      vault operator unseal $UNSEAL_KEY
+      cat <<EOF > /tmp/creds.json
+    {
+      "token_name": "vault-provider-token",
+      "token": "$VAULT_ROOT_TOKEN"
+    }
+    EOF
+      if [ $VAULT_ROOT_TOKEN != "" ]
+      then
+        kubectl create secret -n vault generic ${ARGOCD_ENV_vault_keys_secret} --from-literal=unseal_key=$UNSEAL_KEY --from-literal=root_token=$VAULT_ROOT_TOKEN --from-file=creds=/tmp/creds.json --from-file=vault-keys.json=/tmp/output.json --save-config --dry-run=client -o yaml | kubectl apply -f -
+      else
+        echo "VAULT_ROOT_TOKEN not parsed correctly, exiting"
+        exit 1
+      fi
+    else
+      echo "vault already initialized"
+      if [ $(vault status -format=json | jq .sealed) == "true" ]
+      then
+        echo "unsealing vault"
+        vault operator unseal $(kubectl get secret -n vault ${ARGOCD_ENV_vault_keys_secret} -o jsonpath="{.data.unseal_key}" | base64 -d)
+      else
+        echo "vault already unsealed"
+      fi
+    fi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: insert-cloud-secrets
+  namespace: vault
+  annotations: {}
+    #argocd.argoproj.io/hook: Sync
+    #argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: vault-client
+          #TODO: this version tag needs another solution
+          image: hashicorp/vault:1.17.2
+          command:
+            - /bin/sh
+            - "-c"
+          args:
+            - >
+              export VAULT_ADDR="http://vault-active.vault.svc.cluster.local:8200";
+              vault login -no-print $VAULT_ROOT_TOKEN;
+              vault kv put -mount=$VAULT_KV_SECRET_PATH cloud-api-access cloud_platform_api_client_id=${ARGOCD_ENV_cloud_platform_api_client_id} cloud_platform_api_client_secret=${ARGOCD_ENV_cloud_platform_api_client_secret};
+          env:
+            - name: VAULT_ROOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ${ARGOCD_ENV_vault_keys_secret}
+                  key: root_token
+            - name: VAULT_KV_SECRET_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: ${ARGOCD_ENV_tf_post_config_output_secret}
+                  key: kv_path

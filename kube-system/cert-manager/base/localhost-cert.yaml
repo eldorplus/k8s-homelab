@@ -1,0 +1,14 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: localhost
+  namespace: default
+spec:
+  secretName: localhost-tls
+  issuerRef:
+    name: vault-issuer
+  commonName: localhost
+  dnsNames:
+  - traefik.localhost
+  - '*.localhost'
